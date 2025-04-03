@@ -1,0 +1,50 @@
+// Account.java
+@Entity
+public class Account {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String accountNumber;
+    private BigDecimal balance;
+    
+    // constructors, getters, setters
+}
+
+// Transaction.java
+@Entity
+public class Transaction {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private BigDecimal amount;
+    private LocalDateTime timestamp;
+    
+    // constructors, getters, setters
+}
+
+// BankService.java
+@Service
+public class BankService {
+    @Autowired
+    private SessionFactory sessionFactory;
+    
+    @Transactional
+    public void transferMoney(Long fromAccountId, 
+                             Long toAccountId, 
+                             BigDecimal amount) {
+        Session session = sessionFactory.getCurrentSession();
+        
+        Account fromAccount = session.get(Account.class, fromAccountId);
+        Account toAccount = session.get(Account.class, toAccountId);
+        
+        if(fromAccount.getBalance().compareTo(amount) < 0) {
+            throw new InsufficientFundsException("Not enough balance");
+        }
+        
+        fromAccount.setBalance(fromAccount.getBalance().subtract(amount));
+        toAccount.setBalance(toAccount.getBalance().add(amount));
+        
+        Transaction transaction = new Transaction(amount, LocalDateTime.now());
+        session.save(transaction);
+    }
+}
